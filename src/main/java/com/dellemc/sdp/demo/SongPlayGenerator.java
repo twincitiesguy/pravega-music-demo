@@ -275,5 +275,18 @@ public class SongPlayGenerator implements Runnable {
             if (xputInterval <= 0) throw new IllegalArgumentException("xput interval must be greater than 0");
             this.xputInterval = xputInterval;
         }
+
+        @Override
+        public String toString() {
+            return "Config{" +
+                    "controllerEndpoint='" + controllerEndpoint + '\'' +
+                    ", scope='" + scope + '\'' +
+                    ", stream='" + stream + '\'' +
+                    ", useKeycloak=" + useKeycloak +
+                    ", minXput=" + minXput +
+                    ", maxXput=" + maxXput +
+                    ", xputInterval=" + xputInterval +
+                    '}';
+        }
     }
 }

@@ -1,8 +1,12 @@
 package com.dellemc.sdp.demo;
 
 import org.apache.commons.cli.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SongPlayGeneratorCli {
+    private static final Logger log = LoggerFactory.getLogger(SongPlayGeneratorCli.class);
+
     static Options options() {
         Options options = new Options();
 
@@ -55,6 +59,7 @@ public class SongPlayGeneratorCli {
             System.out.println();
         } else {
             SongPlayGenerator.Config config = parseConfig(commandLine);
+            log.info("parsed options:\n{}", config);
             SongPlayGenerator writer = new SongPlayGenerator(config);
             writer.run();
         }
