@@ -10,13 +10,14 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 public class SongPlayGeneratorTest {
-    private static final Logger logger = Logger.getLogger(SongPlayGeneratorTest.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(SongPlayGeneratorTest.class);
 
     private static final String TEST_SCOPE = "pravega-demo";
     private static final String TEST_STREAM = "demo-test-stream";
@@ -101,5 +102,66 @@ public class SongPlayGeneratorTest {
         } while (eventRead.getEvent() != null || eventRead.isCheckpoint());
 
         Assertions.assertEquals(totalEvents, count);
+    }
+
+    @Test
+    public void testVariableRate() throws Exception {
+        int minXput = 2, maxXput = 20, xputInterval = 6, numIntervals = 5;
+
+        SongPlayGenerator.Config config = new SongPlayGenerator.Config();
+        config.setControllerEndpoint(TestUtils.PRAVEGA_CONTROLLER_URI);
+        config.setScope(TEST_SCOPE);
+        config.setStream(TEST_STREAM);
+        config.setMinXput(minXput);
+        config.setMaxXput(maxXput);
+        config.setXputInterval(xputInterval);
+
+        SongPlayGenerator generator = new SongPlayGenerator(config);
+        new Thread(generator).start();
+        long startTime = System.currentTimeMillis();
+
+        int totalEvents = 0;
+
+        // for each expected interval, wait until the middle of the interval, verify xput bounds, and accumulate total events
+        for (int i = 0; i < numIntervals; i++) {
+            long intervalStartTime = startTime + (i * xputInterval * 1000); // i is zero-based
+            long midIntervalTime = intervalStartTime + (xputInterval * 1000 / 2);
+
+            // wait until we are in the middle of this interval
+            Thread.sleep(midIntervalTime - System.currentTimeMillis());
+
+            int currentXput = generator.getCurrentXput();
+
+            // check that current xput is within range
+            Assertions.assertTrue(currentXput >= minXput && currentXput <= maxXput,
+                    "current xput is out of range (" + currentXput + ")");
+
+            // accumulate expected total events
+            totalEvents += currentXput * xputInterval;
+
+            logger.info("checked interval {} -- xput: {}, interval length: {}, expected events after interval: {}",
+                    i + 1, currentXput, xputInterval, totalEvents);
+        }
+
+        // wait until last interval is over
+        long endTime = startTime + (xputInterval * numIntervals * 1000);
+        Thread.sleep(endTime - System.currentTimeMillis());
+
+        // stop generating events
+        generator.stop();
+
+        // make sure expected events were written
+        EventRead eventRead;
+        int count = 0;
+        do {
+            eventRead = pravegaReader.readNextEvent(READ_TIMEOUT);
+            if (eventRead.getEvent() != null) count++;
+        } while (eventRead.getEvent() != null || eventRead.isCheckpoint());
+
+        int diff = Math.abs(totalEvents - count), margin = totalEvents / 50;
+        logger.info("expected events: {}, actual events: {}, difference: {}, margin for error: {}",
+                totalEvents, count, diff, margin);
+        Assertions.assertTrue(diff <= margin,
+                "total events is more than 2% off (expected: " + totalEvents + ", actual: " + count + ")");
     }
 }

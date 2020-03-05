@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -71,7 +72,7 @@ public class SongPlayGenerator implements Runnable {
 
     private Config config;
     private Random random;
-    private int currentXput;
+    private AtomicInteger currentXput = new AtomicInteger();
     private long lastIntervalChangeTime;
     private AtomicBoolean running = new AtomicBoolean();
 
@@ -163,7 +164,7 @@ public class SongPlayGenerator implements Runnable {
         if (System.currentTimeMillis() - lastIntervalChangeTime > config.getXputInterval() * 1000) {
 
             // time to change up the xput
-            currentXput = randomizeXput();
+            currentXput.set(randomizeXput());
             lastIntervalChangeTime = System.currentTimeMillis();
         }
     }
@@ -175,12 +176,16 @@ public class SongPlayGenerator implements Runnable {
     }
 
     void throttle() {
-        long sleepTime = 1000 / currentXput;
+        long sleepTime = 1000 / currentXput.get();
         try {
             Thread.sleep(sleepTime);
         } catch (InterruptedException e) {
             log.warn("interrupted while throttling", e);
         }
+    }
+
+    public int getCurrentXput() {
+        return currentXput.get();
     }
 
     static class Config {
