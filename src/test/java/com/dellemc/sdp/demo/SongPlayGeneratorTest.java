@@ -97,7 +97,7 @@ public class SongPlayGeneratorTest {
         int count = 0;
         do {
             eventRead = pravegaReader.readNextEvent(READ_TIMEOUT);
-            count++;
+            if (eventRead.getEvent() != null) count++;
         } while (eventRead.getEvent() != null || eventRead.isCheckpoint());
 
         Assertions.assertEquals(totalEvents, count);
