@@ -4,7 +4,7 @@ This demo is intended to be similar to the Kafka Music demo.  There is a generat
 
 ## Running the generator
 
-To run the generator, simply build the shadowJar and follow the usage instructions:
+To run the generator, simply build the shadowJar (`./gradlew shadowJar`) and follow the usage instructions:
 
 ```
 usage: SongPlayGenerator [-c <controller-uri>] [-h] [-k] [--max-xput
