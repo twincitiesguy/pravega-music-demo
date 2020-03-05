@@ -99,8 +99,8 @@ public class SongPlayGenerator implements Runnable {
                 // use the player ID as the routing key (guarantees order for each player)
                 String playerId = generatePlayerId();
                 String message = generatePlayMessage(playerId);
-                log.info("Writing message size: {} to stream {} / {}",
-                        message.length(), config.getScope(), config.getStream());
+                log.info("Writing message (key: {}, size: {}) to stream {} / {}",
+                        playerId, message.length(), config.getScope(), config.getStream());
                 writer.writeEvent(playerId, message);
                 verifyXput();
                 throttle();
@@ -196,21 +196,15 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public Config(String controllerEndpoint, String scope, String stream, boolean useKeycloak, int minXput, int maxXput, int xputInterval) {
-            if (controllerEndpoint == null || controllerEndpoint.trim().length() == 0)
-                throw new IllegalArgumentException("controller endpoint is required");
-            if (scope == null || scope.trim().length() == 0) throw new IllegalArgumentException("scope is required");
-            if (stream == null || stream.trim().length() == 0) throw new IllegalArgumentException("stream is required");
-            if (minXput <= 0) throw new IllegalArgumentException("min xput must be greater than 0");
             if (minXput > maxXput)
                 throw new IllegalArgumentException("max xput must be greater than or equal to min xput");
-            if (xputInterval <= 0) throw new IllegalArgumentException("xput interval must be greater than 0");
-            this.controllerEndpoint = controllerEndpoint;
-            this.scope = scope;
-            this.stream = stream;
-            this.useKeycloak = useKeycloak;
-            this.minXput = minXput;
-            this.maxXput = maxXput;
-            this.xputInterval = xputInterval;
+            setControllerEndpoint(controllerEndpoint);
+            setScope(scope);
+            setStream(stream);
+            setUseKeycloak(useKeycloak);
+            setMinXput(minXput);
+            setMaxXput(maxXput);
+            setXputInterval(xputInterval);
         }
 
         public String getControllerEndpoint() {
@@ -218,6 +212,8 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public void setControllerEndpoint(String controllerEndpoint) {
+            if (controllerEndpoint == null || controllerEndpoint.trim().length() == 0)
+                throw new IllegalArgumentException("controller endpoint is required");
             this.controllerEndpoint = controllerEndpoint;
         }
 
@@ -226,6 +222,7 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public void setScope(String scope) {
+            if (scope == null || scope.trim().length() == 0) throw new IllegalArgumentException("scope is required");
             this.scope = scope;
         }
 
@@ -234,6 +231,7 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public void setStream(String stream) {
+            if (stream == null || stream.trim().length() == 0) throw new IllegalArgumentException("stream is required");
             this.stream = stream;
         }
 
@@ -250,6 +248,7 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public void setMinXput(int minXput) {
+            if (minXput <= 0) throw new IllegalArgumentException("min xput must be greater than 0");
             this.minXput = minXput;
         }
 
@@ -258,6 +257,8 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public void setMaxXput(int maxXput) {
+            if (minXput > maxXput)
+                throw new IllegalArgumentException("max xput must be greater than or equal to min xput");
             this.maxXput = maxXput;
         }
 
@@ -266,6 +267,7 @@ public class SongPlayGenerator implements Runnable {
         }
 
         public void setXputInterval(int xputInterval) {
+            if (xputInterval <= 0) throw new IllegalArgumentException("xput interval must be greater than 0");
             this.xputInterval = xputInterval;
         }
     }
