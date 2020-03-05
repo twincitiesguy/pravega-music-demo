@@ -36,9 +36,9 @@ public class SongPlayGeneratorCli {
         if (commandLine.hasOption("min-xput"))
             config.setMinXput(Integer.parseInt(commandLine.getOptionValue("min-xput")));
         if (commandLine.hasOption("max-xput"))
-            config.setMinXput(Integer.parseInt(commandLine.getOptionValue("max-xput")));
+            config.setMaxXput(Integer.parseInt(commandLine.getOptionValue("max-xput")));
         if (commandLine.hasOption("xput-interval"))
-            config.setMinXput(Integer.parseInt(commandLine.getOptionValue("xput-interval")));
+            config.setXputInterval(Integer.parseInt(commandLine.getOptionValue("xput-interval")));
 
         config.setControllerEndpoint(commandLine.getOptionValue('c'));
         config.setScope(commandLine.getOptionValue('x'));
