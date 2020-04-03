@@ -7,9 +7,9 @@ apply plugin: "application"
 apply plugin: "com.github.johnrengelman.shadow"
 
 group = "com.dellemc.sdp.demo"
-version = 1.0
+version = 1.1
 
-mainClassName = "com.dellemc.sdp.demo.SongPlayGeneratorCli"
+mainClassName = "com.dellemc.sdp.demo.music.SongPlayGeneratorCli"
 archivesBaseName = 'pravega-music-demo'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -25,12 +25,13 @@ repositories {
 
 dependencies {
     compile "io.pravega:pravega-client:${pravegaVersion}"
-    compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
-    compile "commons-cli:commons-cli:1.4"
+    compile "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     if (includePravegaCredentials.toBoolean()) {
         compile "io.pravega:pravega-keycloak-client:${pravegaCredentialsVersion}"
     }
-    runtime "ch.qos.logback:logback-classic:1.2.3"
+    compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
+    compile "commons-cli:commons-cli:1.4"
+    compile "ch.qos.logback:logback-classic:1.2.3"
     testImplementation "org.junit.jupiter:junit-jupiter:5.5.2"
     testCompile "io.pravega:pravega-standalone:${pravegaVersion}"
 }

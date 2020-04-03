@@ -11,5 +11,7 @@
 
     <logger name="org.apache" level="error" />
     <logger name="io.pravega" level="error" />
+    <!--
     <logger name="com.dellemc.sdp" level="info" />
+    -->
 </configuration>

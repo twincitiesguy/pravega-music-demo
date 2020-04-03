@@ -1,4 +1,4 @@
-package com.dellemc.sdp.demo;
+package com.dellemc.sdp.demo.music;
 
 import io.pravega.client.ClientConfig;
 import io.pravega.client.admin.StreamManager;

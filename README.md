@@ -7,30 +7,50 @@ This demo is intended to be similar to the Kafka Music demo.  There is a generat
 To run the generator, simply build the shadowJar (`./gradlew shadowJar`) and follow the usage instructions:
 
 ```
-usage: SongPlayGenerator [-c <controller-uri>] [-h] [-k] [--max-xput
-       <events-per-second>] [--min-xput <events-per-second>] [-s
-       <pravega-stream>] [-x <pravega-scope>] [--xput-interval <seconds>]
- -c,--controller <controller-uri>    Service endpoint of the Pravega
-                                     controller
- -h,--help                           Print this help text
- -k,--use-keycloak                   This enables Keycloak authentication
-                                     for use with Streaming Data Platform.
-                                     You must have a valid keycloak.json
-                                     file in your home directory
-    --max-xput <events-per-second>   Maximum throughput (events per
-                                     second) to write. Throughput will
-                                     vary randomly between min and max.
-                                     Default is 20
-    --min-xput <events-per-second>   Minimum throughput (events per
-                                     second) to write. Throughput will
-                                     vary randomly between min and max.
-                                     Default is 1
- -s,--stream <pravega-stream>        The Pravega stream name
- -x,--scope <pravega-scope>          The Pravega scope
-    --xput-interval <seconds>        Time in seconds between changes to
-                                     the throughput rate. Throughput will
-                                     remain constant for this duration.
-                                     Default is 20
+usage: SongPlayGenerator [-c <controller-uri>] [-d] [-h] [-k] [-p
+       <num-players>] [-s <pravega-stream>] [-v] [-x <pravega-scope>]
+ -c,--controller <controller-uri>   Service endpoint of the Pravega
+                                    controller
+ -d,--debug                         Debug logging
+ -h,--help                          Print this help text
+ -k,--use-keycloak                  This enables Keycloak authentication
+                                    for use with Streaming Data Platform.
+                                    You must have a valid keycloak.json
+                                    file in your home directory
+ -p,--players <num-players>         Number of players/users to simulate.
+                                    Each player will simulate live user
+                                    behavior. Default is 100 (~8 events
+                                    per second)
+ -s,--stream <pravega-stream>       The Pravega stream name
+ -v,--verbose                       Verbose logging
+ -x,--scope <pravega-scope>         The Pravega scope
 ```
 
 (You can generate these instructions by running the jar with the `-h` or `--help` option) 
+
+### Sample JSON format
+```$json
+{
+  "timestamp": 1585895510886, // <- this is the event time 
+  "playerId": 123, // <- this is the routing key
+  "subscriptionLevel": "Promo30",
+  "partnerService": null,
+  "songEventType": "Skip",
+  "lastContext": {
+    "listType": "Station",
+    "playlist": null,
+    "station": "Fake Station",
+    "artist": "Tag Team",
+    "album": "Fake Album",
+    "song": "Whoomp! (There It Is)"
+  },
+  "nextContext": {
+    "listType": "Station",
+    "playlist": null,
+    "station": "Fake Station",
+    "artist": "Bee Gees",
+    "album": "Fake Album",
+    "song": "Night Fever"
+  }
+}
+```
