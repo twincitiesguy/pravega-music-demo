@@ -12,19 +12,9 @@ package com.dellemc.sdp.demo.music;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.pravega.client.ClientConfig;
-import io.pravega.client.EventStreamClientFactory;
-import io.pravega.client.admin.StreamManager;
-import io.pravega.client.stream.EventStreamWriter;
-import io.pravega.client.stream.EventWriterConfig;
-import io.pravega.client.stream.ScalingPolicy;
-import io.pravega.client.stream.StreamConfiguration;
-import io.pravega.client.stream.impl.UTF8StringSerializer;
-import io.pravega.keycloak.client.PravegaKeycloakCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -59,14 +49,8 @@ public class SongEventGenerator implements Runnable {
             players.add(new SongPlayer(i + 1));
         }
 
-        // create stream
-        ClientConfig clientConfig = createClientConfig();
-        createStream(clientConfig);
-
-        // create client factory and event writer
-        try (EventStreamClientFactory clientFactory = EventStreamClientFactory.withScope(config.getScope(), clientConfig);
-             EventStreamWriter<String> writer = clientFactory.createEventWriter(
-                     config.getStream(), new UTF8StringSerializer(), EventWriterConfig.builder().build())) {
+        // create event writer
+        try (EventWriter eventWriter = createEventWriter(config)) {
 
             // loop until stopped
             while (running.get()) {
@@ -86,7 +70,7 @@ public class SongEventGenerator implements Runnable {
                 events.sort((o1, o2) -> (int) (o1.timestamp - o2.timestamp));
 
                 // submit events to be emitted on time
-                taskService.submit(new TimedEventWriterTask(writer, events));
+                taskService.submit(new TimedEventWriterTask(eventWriter, events));
 
                 // sleep for a while
                 Thread.sleep(futureEventThresholdMS / 5);
@@ -98,35 +82,16 @@ public class SongEventGenerator implements Runnable {
         }
     }
 
+    EventWriter createEventWriter(Config config) {
+        if (config.isUseKinesis()) {
+            return new KinesisEventWriter(config);
+        } else {
+            return new PravegaEventWriter(config);
+        }
+    }
+
     public void stop() {
         running.set(false);
-    }
-
-    ClientConfig createClientConfig() {
-        ClientConfig.ClientConfigBuilder builder = ClientConfig.builder();
-        builder.controllerURI(URI.create(config.getControllerEndpoint()));
-
-        // Keycloak means we are using Streaming Data Platform
-        if (config.isUseKeycloak()) {
-            builder.credentials(new PravegaKeycloakCredentials());
-        }
-
-        return builder.build();
-    }
-
-    void createStream(ClientConfig clientConfig) {
-        try (StreamManager streamManager = StreamManager.create(clientConfig)) {
-
-            // create the scope
-            if (!config.isUseKeycloak()) // can't create a scope in SDP
-                streamManager.createScope(config.getScope());
-
-            // create the stream
-            StreamConfiguration streamConfiguration = StreamConfiguration.builder()
-                    .scalingPolicy(ScalingPolicy.byEventRate(5, 2, 2))
-                    .build();
-            streamManager.createStream(config.getScope(), config.getStream(), streamConfiguration);
-        }
     }
 
     static class Config {
@@ -134,16 +99,20 @@ public class SongEventGenerator implements Runnable {
         String scope;
         String stream;
         boolean useKeycloak;
+        boolean useKinesis;
+        String awsProfile;
         int playerCount = DEFAULT_PLAYER_COUNT;
 
         public Config() {
         }
 
-        public Config(String controllerEndpoint, String scope, String stream, boolean useKeycloak, int playerCount) {
+        public Config(String controllerEndpoint, String scope, String stream, boolean useKeycloak, boolean useKinesis, String awsProfile, int playerCount) {
             setControllerEndpoint(controllerEndpoint);
             setScope(scope);
             setStream(stream);
             setUseKeycloak(useKeycloak);
+            setUseKinesis(useKinesis);
+            setAwsProfile(awsProfile);
             setPlayerCount(playerCount);
         }
 
@@ -152,8 +121,6 @@ public class SongEventGenerator implements Runnable {
         }
 
         public void setControllerEndpoint(String controllerEndpoint) {
-            if (controllerEndpoint == null || controllerEndpoint.trim().length() == 0)
-                throw new IllegalArgumentException("controller endpoint is required");
             this.controllerEndpoint = controllerEndpoint;
         }
 
@@ -162,7 +129,6 @@ public class SongEventGenerator implements Runnable {
         }
 
         public void setScope(String scope) {
-            if (scope == null || scope.trim().length() == 0) throw new IllegalArgumentException("scope is required");
             this.scope = scope;
         }
 
@@ -183,6 +149,22 @@ public class SongEventGenerator implements Runnable {
             this.useKeycloak = useKeycloak;
         }
 
+        public boolean isUseKinesis() {
+            return useKinesis;
+        }
+
+        public void setUseKinesis(boolean useKinesis) {
+            this.useKinesis = useKinesis;
+        }
+
+        public String getAwsProfile() {
+            return awsProfile;
+        }
+
+        public void setAwsProfile(String awsProfile) {
+            this.awsProfile = awsProfile;
+        }
+
         public int getPlayerCount() {
             return playerCount;
         }
@@ -199,19 +181,21 @@ public class SongEventGenerator implements Runnable {
                     ", scope='" + scope + '\'' +
                     ", stream='" + stream + '\'' +
                     ", useKeycloak=" + useKeycloak +
+                    ", useKinesis=" + useKinesis +
+                    ", awsProfile=" + awsProfile +
                     ", playerCount=" + playerCount +
                     '}';
         }
     }
 
     class TimedEventWriterTask implements Runnable {
-        private EventStreamWriter<String> writer;
+        private EventWriter writer;
         private List<SongEvent> events;
 
         /**
          * @param events a *sorted* list of events to write (sorted by future emission time)
          */
-        public TimedEventWriterTask(EventStreamWriter<String> writer, List<SongEvent> events) {
+        public TimedEventWriterTask(EventWriter writer, List<SongEvent> events) {
             this.writer = writer;
             this.events = events;
         }
@@ -243,5 +227,12 @@ public class SongEventGenerator implements Runnable {
                 }
             }
         }
+    }
+
+    public interface EventWriter extends AutoCloseable {
+        void writeEvent(String routingKey, String body);
+
+        @Override
+        void close();
     }
 }

@@ -27,6 +27,10 @@ public class SongEventGeneratorCli {
         options.addOption(Option.builder("v").longOpt("verbose").desc("Verbose logging").build());
         options.addOption(Option.builder("d").longOpt("debug").desc("Debug logging").build());
 
+        options.addOption(Option.builder("z").longOpt("kinesis").desc("Write to Kinesis instead of Pravega (for testing)").build());
+        options.addOption(Option.builder().longOpt("aws-profile").desc("When writing to Kinesis, the AWS CLI profile to use (configuration must be set for this profile)")
+                .hasArg().argName("aws-profile").build());
+
         options.addOption(Option.builder("h").longOpt("help").desc("Print this help text").build());
         return options;
     }
@@ -41,6 +45,8 @@ public class SongEventGeneratorCli {
         config.setScope(commandLine.getOptionValue('x'));
         config.setStream(commandLine.getOptionValue('s'));
         config.setUseKeycloak(commandLine.hasOption('k'));
+        config.setUseKinesis(commandLine.hasOption('z'));
+        config.setAwsProfile(commandLine.getOptionValue("aws-profile"));
 
         return config;
     }
@@ -50,7 +56,7 @@ public class SongEventGeneratorCli {
 
         // help text
         if (commandLine.hasOption('h')) {
-            System.out.println("\n" + SongEventGenerator.class.getSimpleName() + " - generates random song plays and writes them to a Pravega stream\n");
+            System.out.println("\n" + SongEventGenerator.class.getSimpleName() + " - generates random song plays and writes them to a stream\n");
             HelpFormatter hf = new HelpFormatter();
             hf.printHelp(SongEventGenerator.class.getSimpleName(), options(), true);
             System.out.println();

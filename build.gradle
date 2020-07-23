@@ -7,9 +7,9 @@ apply plugin: "application"
 apply plugin: "com.github.johnrengelman.shadow"
 
 group = "com.dellemc.sdp.demo"
-version = 1.1
+version = 1.2
 
-mainClassName = "com.dellemc.sdp.demo.music.SongPlayGeneratorCli"
+mainClassName = "com.dellemc.sdp.demo.music.SongEventGeneratorCli"
 archivesBaseName = 'pravega-music-demo'
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -32,6 +32,7 @@ dependencies {
     compile "org.slf4j:slf4j-api:${slf4jApiVersion}"
     compile "commons-cli:commons-cli:1.4"
     compile "ch.qos.logback:logback-classic:1.2.3"
+    compile "com.amazonaws:amazon-kinesis-client:1.13.3"
     testImplementation "org.junit.jupiter:junit-jupiter:5.5.2"
     testCompile "io.pravega:pravega-standalone:${pravegaVersion}"
 }
